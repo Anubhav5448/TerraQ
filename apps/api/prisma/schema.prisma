@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  activityType String   @default("running")
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+
+  sessions ActivitySession[]
+  tiles    Tile[]
+}
+
+model Tile {
+  id          Int      @id @default(autoincrement())
+  tileX       Int
+  tileY       Int
+  state       String   @default("neutral")
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  streakCount Int      @default(0)
+
+  @@unique([tileX, tileY])
+}
+
+model ActivitySession {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  type        String
+  distanceM   Float
+  durationS   Int
+  xpEarned    Int
+  startedAt   DateTime
+  endedAt     DateTime?
+}
