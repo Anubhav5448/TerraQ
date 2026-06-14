@@ -38,7 +38,7 @@ router.get("/me", requireAuth, generalLimiter, async (req: AuthRequest, res) => 
       activityType: true,
       avatarUrl: true,
       createdAt: true,
-      _count: { select: { tiles: true } },
+      _count: { select: { territories: true } },
     },
   });
 
@@ -202,13 +202,21 @@ router.delete("/me/avatar", requireAuth, sensitiveLimiter, async (req: AuthReque
 // Dashboard API
 
 router.get("/me/dashboard", requireAuth, generalLimiter, async (req: AuthRequest, res) => {
-  const user = await prisma.user.findUnique({
+const user = await prisma.user.findUnique({
     where: { id: req.userId },
     select: {
       username: true,
       xp: true,
       level: true,
-      tiles: { select: { tileX: true, tileY: true, state: true, streakCount: true } },
+      territories: {
+        select: { id: true, points: true, areaM2: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      },
+      routes: {
+        select: { id: true, points: true, isClosed: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
     },
   });
 
@@ -218,23 +226,57 @@ router.get("/me/dashboard", requireAuth, generalLimiter, async (req: AuthRequest
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const weeklyDistance = await prisma.activitySession.aggregate({
-    where: { userId: req.userId, startedAt: { gte: oneWeekAgo } },
+    where: { userId: req.userId!, startedAt: { gte: oneWeekAgo } },
     _sum: { distanceM: true },
   });
 
-  const currentStreak = user.tiles.reduce(
-    (max, t) => Math.max(max, t.streakCount),
-    0
-  );
+  const totalAreaM2 = user.territories.reduce((sum, t) => sum + t.areaM2, 0);
 
   res.json({
     username: user.username,
     xp: user.xp,
     level: user.level,
-    tilesOwned: user.tiles.filter((t) => t.state === "owned").length,
-    currentStreak,
+    territoriesOwned: user.territories.length,
+    totalAreaKm2: totalAreaM2 / 1_000_000,
     distanceWeekKm: (weeklyDistance._sum.distanceM ?? 0) / 1000,
-    tiles: user.tiles,
+    territories: user.territories,
+    routes: user.routes,
+  });
+});
+
+
+
+
+router.get("/me/activities", requireAuth, generalLimiter, async (req: AuthRequest, res) => {
+  const page = parseInt((req.query.page as string) || "1");
+  const limit = 10;
+  const skip = (page - 1) * limit;
+
+  const [sessions, total] = await Promise.all([
+    prisma.activitySession.findMany({
+      where: { userId: req.userId! },
+      orderBy: { startedAt: "desc" },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        type: true,
+        distanceM: true,
+        durationS: true,
+        xpEarned: true,
+        startedAt: true,
+        endedAt: true,
+        territoryId: true,
+      },
+    }),
+    prisma.activitySession.count({ where: { userId: req.userId! } }),
+  ]);
+
+  res.json({
+    sessions,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
   });
 });
 export default router;

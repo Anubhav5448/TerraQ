@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback } from "react";
 import { gpsToTile, haversineDistance } from "@/lib/geo";
+import { notifyActivityStart, notifyActivityStop, registerActivitySW, onSWStopCommand } from "@/lib/activitySW";
 
 export interface TrackPoint {
   lat: number;
@@ -29,7 +30,7 @@ export function useActivityTracker() {
   const startTimeRef = useRef<number | null>(null);
   const lastPointRef = useRef<TrackPoint | null>(null);
 
-  const start = useCallback(() => {
+  const start = useCallback((type: "running" | "cycling" | "walking" = "running") => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported on this device");
       return;
@@ -41,6 +42,11 @@ export function useActivityTracker() {
     lastPointRef.current = null;
     startTimeRef.current = Date.now();
     setIsTracking(true);
+
+    // Register SW + show persistent notification
+    registerActivitySW().then(() => {
+      notifyActivityStart(type);
+    });
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
@@ -80,6 +86,7 @@ export function useActivityTracker() {
       watchIdRef.current = null;
     }
     setIsTracking(false);
+    notifyActivityStop();
 
     if (points.length === 0 || !startTimeRef.current) return null;
 

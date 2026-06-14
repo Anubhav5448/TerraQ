@@ -1,16 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Play, Square, Loader2 } from "lucide-react";
 import { useActivityTracker, type ActivityResult } from "@/hooks/useActivityTracker";
 import { apiPost } from "@/lib/api";
+import { registerActivitySW, notifyActivityStart, notifyActivityStop, onSWStopCommand } from "@/lib/activitySW";
 
 type ActivityType = "running" | "cycling" | "walking";
 
 interface SubmitResponse {
   xpEarned: number;
-  tilesClaimed: number;
+  territoryClaimed: boolean;
   newLevel: number;
+}
+
+function useTimer(running: boolean) {
+  const [elapsed, setElapsed] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (running) {
+      setElapsed(0);
+      intervalRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [running]);
+
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
 export default function ActivityTracker({ onComplete }: { onComplete: () => void }) {
@@ -19,8 +39,17 @@ export default function ActivityTracker({ onComplete }: { onComplete: () => void
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const timer = useTimer(isTracking);
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      onSWStopCommand(() => {
+        if (isTracking) handleStop();
+      });
+    }
+  }, [isTracking]);
 
-  const handleStop = async () => {
+const handleStop = async () => {
+    notifyActivityStop();
     const activity = stop(activityType);
     if (!activity) return;
 
@@ -53,7 +82,10 @@ export default function ActivityTracker({ onComplete }: { onComplete: () => void
           </select>
 
           <button
-            onClick={start}
+            onClick={() => {
+              registerActivitySW().then(() => notifyActivityStart(activityType));
+              start(activityType);
+            }}
             disabled={submitting}
             className="bg-blue-500 hover:bg-blue-400 disabled:opacity-60 text-white font-medium text-sm rounded-lg px-4 py-2.5 flex items-center gap-2 transition-colors"
           >
@@ -65,7 +97,10 @@ export default function ActivityTracker({ onComplete }: { onComplete: () => void
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-sm text-gray-400">Tracking {activityType}...</p>
-            <p className="text-lg font-semibold">{(distanceM / 1000).toFixed(2)} km</p>
+            <div className="flex items-center gap-4 mt-1">
+              <p className="text-2xl font-semibold font-mono">{timer}</p>
+              <p className="text-lg text-gray-300">{(distanceM / 1000).toFixed(2)} km</p>
+            </div>
           </div>
           <button
             onClick={handleStop}
@@ -81,7 +116,8 @@ export default function ActivityTracker({ onComplete }: { onComplete: () => void
       {submitError && <p className="text-sm text-red-400 mt-2">{submitError}</p>}
       {result && (
         <p className="text-sm text-cyan-400 mt-2">
-          +{result.xpEarned} XP · {result.tilesClaimed} tile{result.tilesClaimed !== 1 ? "s" : ""} claimed
+          +{result.xpEarned} XP
+          {result.territoryClaimed ? " · Territory claimed! 🎉" : " · Route saved"}
           {result.newLevel > 1 ? ` · Level ${result.newLevel}` : ""}
         </p>
       )}

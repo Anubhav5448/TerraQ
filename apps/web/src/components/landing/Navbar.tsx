@@ -57,7 +57,7 @@ export default function Navbar() {
 
 
 import { useRef } from "react";
-import { LayoutDashboard, User, LogOut } from "lucide-react";
+import { LayoutDashboard, User, LogOut, Route } from "lucide-react";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 function ProfileDropdown({
   user,
@@ -79,10 +79,10 @@ function ProfileDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const items = [
+ const items = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Activities", href: "/activities", icon: Route },
     { label: "Profile", href: "/profile", icon: User },
-
   ];
 
   return (

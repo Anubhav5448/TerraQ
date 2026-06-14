@@ -1,10 +1,10 @@
-import { Map, Flame, Zap, Route } from "lucide-react";
+import { Map, AreaChart, Zap, Route } from "lucide-react";
 import type { DashboardData } from "@/app/dashboard/page";
 
 export default function DashboardStats({ data }: { data: DashboardData }) {
   const stats = [
-    { icon: Map, label: "Tiles owned", value: data.tilesOwned },
-    { icon: Flame, label: "Current streak", value: `${data.currentStreak} days` },
+    { icon: Map, label: "Territories", value: data.territoriesOwned },
+    { icon: AreaChart, label: "Area claimed", value: `${data.totalAreaKm2.toFixed(4)} km²` },
     { icon: Zap, label: "Total XP", value: data.xp.toLocaleString() },
     { icon: Route, label: "Distance (week)", value: `${data.distanceWeekKm.toFixed(1)} km` },
   ];

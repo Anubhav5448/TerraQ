@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getToken } from "@/lib/auth";
 import TopoBackground from "./TopoHero";
 
 export default function Hero() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!getToken());
+  }, []);
+
   return (
     <div className="relative px-6 py-20 md:py-28 text-center overflow-hidden">
       <TopoBackground />
@@ -14,25 +24,22 @@ export default function Hero() {
           <span className="text-cyan-400">claim the map</span>
         </h1>
         <p className="text-base text-gray-400 max-w-md mx-auto mb-8 leading-relaxed">
-          Track real-world activity and convert your routes into owned tiles.
-          Hold your streak, defend your turf, and climb the leaderboard.
+          Track real-world activity and convert your routes into owned territory.
+          Close a loop and claim everything inside.
         </p>
         <div className="flex gap-3 justify-center">
           <Link
-            href="/signup"
+            href={isLoggedIn ? "/dashboard" : "/signup"}
             className="bg-blue-500 hover:bg-blue-400 text-white font-medium text-sm rounded-lg px-7 py-3 transition-colors"
           >
-            Get started
+            {isLoggedIn ? "Go to dashboard" : "Get started"}
           </Link>
-
-           <Link
+          <Link
             href="#how-it-works"
             className="border border-blue-500/30 text-gray-200 hover:bg-blue-500/5 font-medium text-sm rounded-lg px-7 py-3 transition-colors"
           >
             See how it works
           </Link>
-          
-          
         </div>
       </div>
     </div>

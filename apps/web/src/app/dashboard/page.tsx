@@ -4,20 +4,38 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import TerritoryMap from "@/components/dashboard/TerritoryMap";
 import ActivityTracker from "@/components/dashboard/ActivityTracker";
 
+export interface GeoPoint { lat: number; lng: number; timestamp?: number; }
+
+export interface TerritoryData {
+  id: string;
+  points: GeoPoint[];
+  areaM2: number;
+  createdAt: string;
+}
+
+export interface RouteData {
+  id: string;
+  points: GeoPoint[];
+  isClosed: boolean;
+  createdAt: string;
+}
 
 export interface DashboardData {
   username: string;
   xp: number;
   level: number;
-  tilesOwned: number;
-  currentStreak: number;
+  territoriesOwned: number;
+  totalAreaKm2: number;
   distanceWeekKm: number;
-  tiles: { tileX: number; tileY: number; state: string; streakCount: number }[];
+  territories: TerritoryData[];
+  routes: RouteData[];
 }
 
 export default function DashboardPage() {
@@ -60,10 +78,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#0D1117] text-[#E6EDF3] px-6 py-8">
       <div className="max-w-5xl mx-auto">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors mb-6"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </Link>
         <DashboardHeader username={data.username} />
         <ActivityTracker onComplete={fetchDashboard} />
         <DashboardStats data={data} />
-        <TerritoryMap tiles={data.tiles} />
+        <TerritoryMap territories={data.territories} routes={data.routes} />
       </div>
     </div>
   );
