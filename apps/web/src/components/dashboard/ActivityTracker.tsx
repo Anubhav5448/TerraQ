@@ -98,8 +98,8 @@ const handleStop = async () => {
           <div>
             <p className="text-sm text-gray-400">Tracking {activityType}...</p>
             <div className="flex items-center gap-4 mt-1">
-              <p className="text-2xl font-semibold font-mono">{timer}</p>
-              <p className="text-lg text-gray-300">{(distanceM / 1000).toFixed(2)} km</p>
+             <p className="text-2xl font-semibold font-mono">{timer ?? "00:00"}</p>
+              <p className="text-lg text-gray-300">{((distanceM ?? 0) / 1000).toFixed(2)} km</p>
             </div>
           </div>
           <button
