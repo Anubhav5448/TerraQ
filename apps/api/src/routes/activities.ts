@@ -23,7 +23,7 @@ const createActivitySchema = z.object({
   type: z.enum(["running", "cycling", "walking"]),
   distanceM: z.number().nonnegative(),
   durationS: z.number().int().nonnegative(),
-  tiles: z.array(tileSchema).min(1),
+  tiles: z.array(tileSchema).optional(),
   startedAt: z.string().datetime(),
   endedAt: z.string().datetime().optional(),
 });
@@ -54,25 +54,7 @@ router.post("/", requireAuth, activityLimiter, async (req: AuthRequest, res) => 
         },
       });
 
-      // TESTING MODE: instantly mark every touched tile as "owned" by this user,
-      // no streak requirement. Replace with streak logic later.
-      for (const t of tiles) {
-        await tx.tile.upsert({
-          where: { tileX_tileY: { tileX: t.tileX, tileY: t.tileY } },
-          create: {
-            tileX: t.tileX,
-            tileY: t.tileY,
-            state: "owned",
-            ownerId: userId,
-            streakCount: 1,
-          },
-          update: {
-            state: "owned",
-            ownerId: userId,
-            streakCount: 1,
-          },
-        });
-      }
+      // Tile claiming removed — territory system handles claiming via Territory model
 
       // Award XP and recompute level (simple: every 1000 XP = 1 level)
       const updatedUser = await tx.user.update({
@@ -91,7 +73,7 @@ router.post("/", requireAuth, activityLimiter, async (req: AuthRequest, res) => 
         });
       }
 
-      return { session, xpEarned, tilesClaimed: tiles.length, newLevel };
+      return { session, xpEarned, newLevel };
     });
 
     res.status(201).json(result);
