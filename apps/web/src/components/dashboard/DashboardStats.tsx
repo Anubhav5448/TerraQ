@@ -3,10 +3,10 @@ import type { DashboardData } from "@/app/dashboard/page";
 
 export default function DashboardStats({ data }: { data: DashboardData }) {
   const stats = [
-    { icon: Map, label: "Territories", value: data.territoriesOwned },
-    { icon: AreaChart, label: "Area claimed", value: `${data.totalAreaKm2.toFixed(4)} km²` },
-    { icon: Zap, label: "Total XP", value: data.xp.toLocaleString() },
-    { icon: Route, label: "Distance (week)", value: `${data.distanceWeekKm.toFixed(1)} km` },
+    { icon: Map, label: "Territories", value: data.territoriesOwned ?? 0 },
+    { icon: AreaChart, label: "Area claimed", value: `${(data.totalAreaKm2 ?? 0).toFixed(4)} km²` },
+    { icon: Zap, label: "Total XP", value: (data.xp ?? 0).toLocaleString() },
+    { icon: Route, label: "Distance (week)", value: `${(data.distanceWeekKm ?? 0).toFixed(1)} km` },
   ];
 
   return (
